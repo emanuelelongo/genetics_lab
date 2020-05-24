@@ -1,8 +1,10 @@
 package genetic
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 )
 
 // Config contains algorithm parameters
@@ -18,6 +20,21 @@ type Config struct {
 
 func coinFlip(p float64) bool {
 	return rand.Float64() < p
+}
+
+func generationBuilder(g *Generation, wg *sync.WaitGroup, start int) chan Individual {
+	collector := make(chan Individual, 20)
+	go func() {
+		next := start
+		for i := range collector {
+			if next < len(g.Population) {
+				g.Population[next] = i
+				next++
+			}
+			wg.Done()
+		}
+	}()
+	return collector
 }
 
 // Solve function run the genetic algorithm
@@ -51,25 +68,29 @@ func Solve(config Config, random RandomIndividualBuilder, progress chan Individu
 			newGen.Population[i] = e
 		}
 
+		var wg sync.WaitGroup
+		collector := generationBuilder(newGen, &wg, len(elite))
+
 		for i := len(elite); i < config.PopulationSize; i += 2 {
-			child1 := prevGen.Select()
-			child2 := prevGen.Select()
+			wg.Add(2)
+			go func() {
+				child1 := prevGen.Select()
+				child2 := prevGen.Select()
 
-			if coinFlip(config.CrossoverRate) {
-				child1, child2 = child1.Crossover(child2)
-			}
+				if coinFlip(config.CrossoverRate) {
+					child1, child2 = child1.Crossover(child2)
+				}
 
-			if coinFlip(config.MutationRate) {
-				child1 = child1.Mutate()
-				child2 = child2.Mutate()
-			}
+				if coinFlip(config.MutationRate) {
+					child1 = child1.Mutate()
+					child2 = child2.Mutate()
+				}
 
-			newGen.Population[i] = child1
-
-			if i+1 < config.PopulationSize {
-				newGen.Population[i+1] = child2
-			}
+				collector <- child1
+				collector <- child2
+			}()
 		}
+		wg.Wait()
 		newGen.SetComplete()
 
 		bestInGen := newGen.SelectBest()
@@ -80,5 +101,6 @@ func Solve(config Config, random RandomIndividualBuilder, progress chan Individu
 		} else {
 			notImproving++
 		}
+		fmt.Printf("Generation: %d; Not improving by %d\n", generation, notImproving)
 	}
 }

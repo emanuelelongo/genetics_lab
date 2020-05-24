@@ -8,9 +8,8 @@ import (
 	"fyne.io/fyne/widget"
 )
 
-var simpleScoreOut = widget.NewLabel("-")
 var currenGeneration = widget.NewLabel("-")
-var geneticScoreOut = widget.NewLabel("-")
+var scoreLabel = widget.NewLabel("-")
 var spacer = widget.NewLabel("")
 var citiesLabel, populationLabel, maxGenLabel, convergenceDelayLabel, crossoverRateLabel, mutationRateLabel, elitismRateLabel *widget.Label
 var cities, population, maxGen, convergenceDelay, crossoverRate, mutationRate, elitismRate *widget.Slider
@@ -43,12 +42,6 @@ func buildControls() *fyne.Container {
 
 		spacer, spacer,
 
-		widget.NewLabelWithStyle("Simple algorithm", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		spacer,
-
-		widget.NewButton("Solve", onSimpleSolveClick),
-		simpleScoreOut,
-
 		spacer, spacer,
 
 		widget.NewLabelWithStyle("Genetic algorithm", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
@@ -67,14 +60,17 @@ func buildControls() *fyne.Container {
 		elitismRateLabel, elitismRate,
 
 		widget.NewButton("Solve", onGeneticSolveClick),
-		geneticScoreOut,
+		scoreLabel,
+
+		widget.NewButton("Stop", onStopClick),
+		spacer,
 
 		spacer,
 		currenGeneration,
 
 		spacer, spacer,
 
-		widget.NewButton("Clear", onClearPressed),
+		widget.NewButton("Clear", clear),
 		spacer,
 	)
 }

@@ -75,7 +75,6 @@ func (g *Generation) SetComplete() {
 	if g.Complete {
 		panic("Generation has already been completed")
 	}
-
 	for _, i := range g.Population {
 		g.scoreSum += i.FitnessScore()
 	}
@@ -93,6 +92,5 @@ func (g *Generation) SetComplete() {
 			return g.Population[i].FitnessScore() > g.Population[j].FitnessScore()
 		})
 	}
-
 	g.Complete = true
 }

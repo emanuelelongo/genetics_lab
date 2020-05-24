@@ -2,6 +2,7 @@ package main
 
 import (
 	"emanuelelongo/genetics_lab/genetic"
+	"fmt"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
@@ -59,7 +60,7 @@ func onSimpleSolveClick() {
 
 func drawer() {
 	for s := range progress {
-		onClearPressed()
+		clear()
 		drawSolution(currentProblem, s.(*solution))
 		raster.Refresh()
 	}
@@ -85,7 +86,6 @@ func drawer() {
 }
 
 func onGeneticSolveClick() {
-
 	config := genetic.Config{
 		CrossoverRate:    crossoverRate.Value / 100,
 		ElitismRate:      elitismRate.Value / 100,
@@ -99,7 +99,11 @@ func onGeneticSolveClick() {
 	go genetic.Solve(config, randomSolution(&currentProblem), progress)
 }
 
-func onClearPressed() {
+func onStopClick() {
+
+}
+
+func clear() {
 	ctx.SetRGB(.1, .1, .1)
 	ctx.Clear()
 	drawProblem(currentProblem)
@@ -123,7 +127,8 @@ func drawProblem(problem Problem) {
 }
 
 func drawSolution(p Problem, s *solution) {
-	logSolution("Final solution", *s)
+	logSolution("Drawing solution:", *s)
+	scoreLabel.SetText(fmt.Sprintf("%.2f", s.FitnessScore()))
 
 	ctx.SetRGB(0, .5, 0)
 	ctx.SetLineWidth(4)
