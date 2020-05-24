@@ -13,10 +13,12 @@ import (
 var ctx *gg.Context
 var raster *canvas.Raster
 var currentProblem Problem
+var progress chan genetic.Individual
 
 func main() {
 	myApp := app.New()
 	window := myApp.NewWindow("Drawing")
+	progress = make(chan genetic.Individual, 20)
 
 	ctx = gg.NewContext(1000, 1000)
 	ctx.SetRGB(.1, .1, .1)
@@ -29,7 +31,7 @@ func main() {
 			raster,
 		),
 	)
-
+	go drawer()
 	window.Resize(fyne.NewSize(1000, 1000))
 	window.ShowAndRun()
 }
@@ -52,26 +54,49 @@ func onNewRandomProblemPressed() {
 
 func onSimpleSolveClick() {
 	s := randomSolution(&currentProblem)()
-	drawSolution(currentProblem, s.(*solution))
-	raster.Refresh()
+	progress <- s
+}
+
+func drawer() {
+	for s := range progress {
+		onClearPressed()
+		drawSolution(currentProblem, s.(*solution))
+		raster.Refresh()
+	}
+	// doesn't draw more than a solution in 100ms (this is unlikely to happen)
+	// ticker := time.NewTicker(time.Millisecond * 100)
+	// defer ticker.Stop()
+	// canDraw := false
+
+	// for {
+	// 	select {
+	// 	case s := <-progress:
+	// 		if canDraw {
+	// 			canDraw = false
+	// 			onClearPressed()
+	// 			drawSolution(currentProblem, s.(*solution))
+	// 			raster.Refresh()
+	// 		}
+	// 	case <-ticker.C:
+	// 		canDraw = true
+	// 	default:
+	// 	}
+	// }
 }
 
 func onGeneticSolveClick() {
 
 	config := genetic.Config{
-		CrossoverRate:         crossoverRate.Value / 100,
-		ElitismRate:           elitismRate.Value / 100,
-		LowScoreIsBetter:      true,
-		MaxGenerations:        int(maxGen.Value),
-		MutationRate:          mutationRate.Value / 100,
-		NotImprovingThreshold: 5,
-		PopulationSize:        int(population.Value),
+		CrossoverRate:    crossoverRate.Value / 100,
+		ElitismRate:      elitismRate.Value / 100,
+		LowScoreIsBetter: true,
+		MaxGenerations:   int(maxGen.Value),
+		MutationRate:     mutationRate.Value / 100,
+		ConvergenceDelay: int(convergenceDelay.Value),
+		PopulationSize:   int(population.Value),
 	}
 
-	s := genetic.Solve(config, randomSolution(&currentProblem))
-	sol := s.(*solution)
-	drawSolution(currentProblem, sol)
-	raster.Refresh()
+	go genetic.Solve(config, randomSolution(&currentProblem), progress)
 }
 
 func onClearPressed() {

@@ -7,13 +7,13 @@ import (
 
 // Config contains algorithm parameters
 type Config struct {
-	PopulationSize        int
-	CrossoverRate         float64
-	MutationRate          float64
-	ElitismRate           float64
-	MaxGenerations        int
-	NotImprovingThreshold int
-	LowScoreIsBetter      bool
+	PopulationSize   int
+	CrossoverRate    float64
+	MutationRate     float64
+	ElitismRate      float64
+	MaxGenerations   int
+	ConvergenceDelay int
+	LowScoreIsBetter bool
 }
 
 func coinFlip(p float64) bool {
@@ -21,8 +21,7 @@ func coinFlip(p float64) bool {
 }
 
 // Solve function run the genetic algorithm
-func Solve(config Config, random RandomIndividualBuilder) Individual {
-
+func Solve(config Config, random RandomIndividualBuilder, progress chan Individual) {
 	betterThan := func(a, b Individual) bool {
 		if config.LowScoreIsBetter {
 			return a.FitnessScore() < b.FitnessScore()
@@ -41,8 +40,9 @@ func Solve(config Config, random RandomIndividualBuilder) Individual {
 	prevGen.SetComplete()
 
 	bestOverall := prevGen.SelectBest()
+	progress <- bestOverall
 
-	for notImproving < config.NotImprovingThreshold && generation < config.MaxGenerations {
+	for notImproving < config.ConvergenceDelay && generation < config.MaxGenerations {
 		generation++
 		newGen := newGeneration(config.PopulationSize, config.LowScoreIsBetter)
 		elite := prevGen.SelectElite(eliteSize)
@@ -76,9 +76,9 @@ func Solve(config Config, random RandomIndividualBuilder) Individual {
 		if betterThan(bestInGen, bestOverall) {
 			bestOverall = bestInGen
 			notImproving = 0
+			progress <- bestOverall
 		} else {
 			notImproving++
 		}
 	}
-	return bestOverall
 }
